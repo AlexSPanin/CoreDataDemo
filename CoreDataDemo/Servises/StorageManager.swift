@@ -1,33 +1,20 @@
 //
-//  AppDelegate.swift
+//  StorageManager.swift
 //  CoreDataDemo
 //
-//  Created by brubru on 24.01.2022.
+//  Created by Александр Панин on 25.01.2022.
 //
 
-import UIKit
+import Foundation
 import CoreData
 
-@main
-class AppDelegate: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
-
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        window = UIWindow(frame: UIScreen.main.bounds)
-        window?.makeKeyAndVisible()
-        window?.rootViewController = UINavigationController(rootViewController: TaskListViewController())
-        return true
-    }
+class StorageManager {
+    static var shared = StorageManager()
+    private init() {}
     
-    func applicationWillTerminate(_ application: UIApplication) {
-        saveContext()
-    }
-
-
     // MARK: - Core Data stack
 
-    lazy var persistentContainer: NSPersistentContainer = {
+    var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "CoreDataDemo")
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
@@ -37,6 +24,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         })
         return container
     }()
+    
+}
+
+extension StorageManager {
 
     // MARK: - Core Data Saving support
 
@@ -51,6 +42,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
     }
-
+    
+    func fetchData() -> [Task] {
+        let context = persistentContainer.viewContext
+        let fetchRequest = Task.fetchRequest()
+        var taskList: [Task] = []
+        
+        do {
+            taskList = try context.fetch(fetchRequest)
+        } catch {
+           print("Faild to fetch data", error)
+        }
+        return taskList
+    }
+    
 }
-
