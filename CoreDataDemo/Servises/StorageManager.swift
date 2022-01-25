@@ -24,15 +24,13 @@ class StorageManager {
         })
         return container
     }()
-    
 }
 
 extension StorageManager {
 
     // MARK: - Core Data Saving support
-
-    func saveContext () {
-        let context = persistentContainer.viewContext
+    func saveContext() {
+        let  context = persistentContainer.viewContext
         if context.hasChanges {
             do {
                 try context.save()
@@ -43,6 +41,7 @@ extension StorageManager {
         }
     }
     
+    // MARK: - Core Data Fetch
     func fetchData() -> [Task] {
         let context = persistentContainer.viewContext
         let fetchRequest = Task.fetchRequest()
@@ -51,9 +50,22 @@ extension StorageManager {
         do {
             taskList = try context.fetch(fetchRequest)
         } catch {
-           print("Faild to fetch data", error)
+            print("Faild to fetch data", error)
         }
         return taskList
     }
     
+    // MARK: - Core Data Deleting object
+    func deleteContext(_ task: Task) {
+        let  context = persistentContainer.viewContext
+        context.delete(task)
+        if context.hasChanges {
+            do {
+                try context.save()
+            } catch {
+                let nserror = error as NSError
+                fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
+            }
+        }
+    }
 }
