@@ -6,12 +6,10 @@
 //
 
 import UIKit
-import CoreData
 
 class TaskListViewController: UITableViewController {
     private let context = StorageManager.shared.persistentContainer.viewContext
-    private let task = StorageManager.shared.persistentContainer.managedObjectModel
-    
+       
     private let cellID = "task"
     private var taskList: [Task] = []
 
@@ -58,42 +56,62 @@ class TaskListViewController: UITableViewController {
         
     }
     
+    // MARK: - View for New Task
     @objc private func addNewTask() {
-        showAlert(with: "New Task", and: "What do you want to do?")
+        showAlert(title: "New Task", message: "What do you want to do?",
+                  description: "", index: IndexPath(row: 0, section: 0))
     }
- 
-    private func showAlert(with title: String, and message: String) {
+    
+    // MARK: - View for Edit Task
+    private func editingTask(description: String, index: IndexPath) {
+        showAlert(title: "Edit Task", message: "What do you want to change?",
+                  description: description, index: index)
+    }
+    
+    // MARK: - Show  View for New Task or Edit Task
+    private func showAlert(title: String, message: String, description: String, index: IndexPath) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
-            self.save(task)
-        }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
+        let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
+            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
+            if description == "" {
+                self.save(task)
+            } else {
+                self.edit(taskName: task, index: index)
+            }
+        }
         
         alert.addAction(saveAction)
         alert.addAction(cancelAction)
         alert.addTextField { textField in
-            textField.placeholder = "New Task"
+            textField.placeholder = title
+            textField.text = description
         }
         present(alert, animated: true)
     }
     
+    // MARK: - Save New Task Core Data and Tab View
     private func save(_ taskName: String) {
-        
         let task = Task(context: context)
         task.name = taskName
         taskList.append(task)
-        
         let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
-        
         tableView.insertRows(at: [cellIndex], with: .automatic)
-        
         StorageManager.shared.saveContext()
     }
-}
+    
+    // MARK: - Edit Core Data and Tab View
+    private func edit(taskName: String, index: IndexPath) {
+        taskList[index.row].name = taskName
+        tableView.reloadRows(at: [index], with: .fade)
+        StorageManager.shared.saveContext()
+       }
+    }
 
 extension TaskListViewController {
+    
+    // MARK: - Configure Tab View
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         taskList.count
     }
@@ -108,18 +126,45 @@ extension TaskListViewController {
         return cell
     }
     
-    override func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCell.EditingStyle {
-        return .delete
+    // MARK: - Swipe table view and Select
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let delete = deleteAction(at: indexPath)
+        return UISwipeActionsConfiguration(actions: [delete])
     }
     
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-
-            let deleteTask = taskList[indexPath.row]
-            
-            taskList.remove(at: indexPath.row)
-            tableView.deleteRows(at: [indexPath], with: .automatic)
+    override func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let edit = editAction(at: indexPath)
+        return UISwipeActionsConfiguration(actions: [edit])
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let task = taskList[indexPath.row]
+        editingTask(description: task.name ?? "Error", index: indexPath)
+    }
+    
+    // MARK: - Swipe Button Delete
+    func deleteAction(at indexPath: IndexPath) -> UIContextualAction {
+        let action = UIContextualAction(style: .destructive, title: "Delete") { (action, view, complition) in
+            let deleteTask = self.taskList[indexPath.row]
+            self.taskList.remove(at: indexPath.row)
+            self.tableView.deleteRows(at: [indexPath], with: .automatic)
             StorageManager.shared.deleteContext(deleteTask)
+            complition(true)
         }
+        action.backgroundColor = #colorLiteral(red: 0.9372549057, green: 0.3490196168, blue: 0.1921568662, alpha: 1)
+        action.image = UIImage(systemName: "minus.circle")
+        return action
+    }
+    
+    // MARK: - Swipe Button Edit
+    func editAction(at indexPath: IndexPath) -> UIContextualAction {
+        let action = UIContextualAction(style: .destructive, title: "Edit") { (action, view, complition) in
+            let editTask = self.taskList[indexPath.row]
+            self.editingTask(description: editTask.name ?? "Error", index: indexPath)
+            complition(true)
+        }
+        action.backgroundColor = #colorLiteral(red: 0.3411764801, green: 0.6235294342, blue: 0.1686274558, alpha: 1)
+        action.image = UIImage(systemName: "pencil.circle")
+        return action
     }
 }

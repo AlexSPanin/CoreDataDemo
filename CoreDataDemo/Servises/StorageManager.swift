@@ -13,12 +13,11 @@ class StorageManager {
     private init() {}
     
     // MARK: - Core Data stack
-
     var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "CoreDataDemo")
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
-
+                
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         })
@@ -27,7 +26,7 @@ class StorageManager {
 }
 
 extension StorageManager {
-
+    
     // MARK: - Core Data Saving support
     func saveContext() {
         let  context = persistentContainer.viewContext
